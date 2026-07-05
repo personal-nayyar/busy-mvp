@@ -11,7 +11,21 @@ import Database from "better-sqlite3";
 import path from "node:path";
 import fs from "node:fs";
 
-const DB_PATH = process.env.BUSY_DB_PATH ?? path.join(process.cwd(), "data", "busy.db");
+/**
+ * Resolve the SQLite file location.
+ * - BUSY_DB_PATH overrides everything (":memory:" in tests).
+ * - On Vercel (and other serverless hosts) the deployment filesystem is
+ *   read-only except for /tmp, so writing to ./data would throw EROFS at
+ *   import time and 500 every page. Fall back to /tmp there.
+ *   NOTE: /tmp is ephemeral and per-instance — data does not persist across
+ *   cold starts or scale-out. A hosted DB (Postgres/Turso) is required for
+ *   durable multi-instance storage.
+ */
+const DB_PATH =
+  process.env.BUSY_DB_PATH ??
+  (process.env.VERCEL
+    ? path.join("/tmp", "busy.db")
+    : path.join(process.cwd(), "data", "busy.db"));
 
 export type AccountType = "ASSET" | "LIABILITY" | "INCOME" | "EXPENSE" | "EQUITY";
 export type VoucherType = "SALES" | "PURCHASE" | "RECEIPT" | "PAYMENT" | "JOURNAL" | "OPENING";
