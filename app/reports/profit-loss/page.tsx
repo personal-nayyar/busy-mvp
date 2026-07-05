@@ -4,13 +4,14 @@ import { formatDate, firstOfMonth, today } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export default function ProfitLossPage({
+export default async function ProfitLossPage({
   searchParams,
 }: {
-  searchParams: { from?: string; to?: string };
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const from = searchParams.from || firstOfMonth();
-  const to = searchParams.to || today();
+  const sp = await searchParams;
+  const from = sp.from || firstOfMonth();
+  const to = sp.to || today();
   const { income, expense, totalIncome, totalExpense, netProfit } = profitAndLoss(from, to);
   const profit = netProfit >= 0;
 

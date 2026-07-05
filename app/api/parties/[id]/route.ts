@@ -5,11 +5,12 @@ import { isValidGstin } from "@/lib/gstin";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** GET /api/parties/[id] — fetch a single party. */
-export function GET(_req: Request, { params }: Ctx) {
-  const row = db.prepare("SELECT * FROM parties WHERE id = ?").get(params.id);
+export async function GET(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const row = db.prepare("SELECT * FROM parties WHERE id = ?").get(id);
   if (!row) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
@@ -21,7 +22,8 @@ export function GET(_req: Request, { params }: Ctx) {
  * Opening balance is set once at creation and is not re-posted here.
  */
 export async function PUT(req: Request, { params }: Ctx) {
-  const existing = db.prepare("SELECT id FROM parties WHERE id = ?").get(params.id);
+  const { id } = await params;
+  const existing = db.prepare("SELECT id FROM parties WHERE id = ?").get(id);
   if (!existing) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
@@ -57,17 +59,18 @@ export async function PUT(req: Request, { params }: Ctx) {
        SET name = ?, gstin = ?, billing_address = ?, shipping_address = ?,
            state_code = ?, phone = ?
      WHERE id = ?`
-  ).run(name, gstin, billingAddress, shippingAddress, stateCode, phone, params.id);
+  ).run(name, gstin, billingAddress, shippingAddress, stateCode, phone, id);
 
-  return NextResponse.json({ id: Number(params.id) });
+  return NextResponse.json({ id: Number(id) });
 }
 
 /**
  * DELETE /api/parties/[id] — only when the party has no ledger/voucher/invoice
  * activity. Otherwise reject with 400 and a clear message.
  */
-export function DELETE(_req: Request, { params }: Ctx) {
-  const existing = db.prepare("SELECT id FROM parties WHERE id = ?").get(params.id);
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const existing = db.prepare("SELECT id FROM parties WHERE id = ?").get(id);
   if (!existing) {
     return NextResponse.json({ error: "Party not found" }, { status: 404 });
   }
@@ -75,15 +78,15 @@ export function DELETE(_req: Request, { params }: Ctx) {
   const ledger = (
     db
       .prepare("SELECT COUNT(*) c FROM ledger_entries WHERE party_id = ?")
-      .get(params.id) as { c: number }
+      .get(id) as { c: number }
   ).c;
   const vouchers = (
-    db.prepare("SELECT COUNT(*) c FROM vouchers WHERE party_id = ?").get(params.id) as {
+    db.prepare("SELECT COUNT(*) c FROM vouchers WHERE party_id = ?").get(id) as {
       c: number;
     }
   ).c;
   const invoices = (
-    db.prepare("SELECT COUNT(*) c FROM invoices WHERE party_id = ?").get(params.id) as {
+    db.prepare("SELECT COUNT(*) c FROM invoices WHERE party_id = ?").get(id) as {
       c: number;
     }
   ).c;
@@ -98,6 +101,6 @@ export function DELETE(_req: Request, { params }: Ctx) {
     );
   }
 
-  db.prepare("DELETE FROM parties WHERE id = ?").run(params.id);
+  db.prepare("DELETE FROM parties WHERE id = ?").run(id);
   return NextResponse.json({ ok: true });
 }

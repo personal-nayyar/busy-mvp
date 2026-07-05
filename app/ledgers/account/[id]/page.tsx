@@ -29,21 +29,23 @@ function drCr(paise: number): string {
   return paise > 0 ? `${formatINR(paise)} Dr` : `${formatINR(-paise)} Cr`;
 }
 
-export default function AccountLedgerPage({
+export default async function AccountLedgerPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { from?: string; to?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const accountId = Number(params.id);
+  const { id } = await params;
+  const sp = await searchParams;
+  const accountId = Number(id);
   const account = db
     .prepare("SELECT id, name, type FROM accounts WHERE id = ?")
     .get(accountId) as AccountRow | undefined;
   if (!account) notFound();
 
-  const from = (searchParams.from ?? "").trim();
-  const to = (searchParams.to ?? "").trim();
+  const from = (sp.from ?? "").trim();
+  const to = (sp.to ?? "").trim();
 
   const conditions = ["le.account_id = ?"];
   const args: (number | string)[] = [accountId];

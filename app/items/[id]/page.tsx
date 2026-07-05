@@ -18,10 +18,15 @@ interface ItemRow {
   low_stock_threshold: number;
 }
 
-export default function EditItemPage({ params }: { params: { id: string } }) {
+export default async function EditItemPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const item = db
     .prepare("SELECT * FROM items WHERE id = ?")
-    .get(params.id) as ItemRow | undefined;
+    .get(id) as ItemRow | undefined;
 
   if (!item) notFound();
 

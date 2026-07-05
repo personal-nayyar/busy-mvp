@@ -17,10 +17,15 @@ interface PartyRow {
   opening_balance_type: "RECEIVABLE" | "PAYABLE";
 }
 
-export default function EditPartyPage({ params }: { params: { id: string } }) {
+export default async function EditPartyPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const party = db
     .prepare("SELECT * FROM parties WHERE id = ?")
-    .get(params.id) as PartyRow | undefined;
+    .get(id) as PartyRow | undefined;
 
   if (!party) notFound();
 

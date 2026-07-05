@@ -4,12 +4,13 @@ import { formatDate, today } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export default function TrialBalancePage({
+export default async function TrialBalancePage({
   searchParams,
 }: {
-  searchParams: { to?: string };
+  searchParams: Promise<{ to?: string }>;
 }) {
-  const asOf = searchParams.to || today();
+  const sp = await searchParams;
+  const asOf = sp.to || today();
   const { rows, totalDebit, totalCredit } = trialBalance(asOf);
   const balanced = totalDebit === totalCredit;
 

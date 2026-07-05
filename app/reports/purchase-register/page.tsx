@@ -4,13 +4,14 @@ import { formatDate, firstOfMonth, today } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export default function PurchaseRegisterPage({
+export default async function PurchaseRegisterPage({
   searchParams,
 }: {
-  searchParams: { from?: string; to?: string };
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const from = searchParams.from || firstOfMonth();
-  const to = searchParams.to || today();
+  const sp = await searchParams;
+  const from = sp.from || firstOfMonth();
+  const to = sp.to || today();
   const { rows, totals } = purchaseRegister(from, to);
 
   return (

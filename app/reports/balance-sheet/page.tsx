@@ -4,12 +4,13 @@ import { formatDate, today } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 
-export default function BalanceSheetPage({
+export default async function BalanceSheetPage({
   searchParams,
 }: {
-  searchParams: { to?: string };
+  searchParams: Promise<{ to?: string }>;
 }) {
-  const asOf = searchParams.to || today();
+  const sp = await searchParams;
+  const asOf = sp.to || today();
   const { assets, liabilities, equity, totalAssets, totalLiabEquity, difference } =
     balanceSheet(asOf);
   const balanced = difference === 0;

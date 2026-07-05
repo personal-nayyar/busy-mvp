@@ -5,8 +5,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** GET /api/invoices/[id] — one invoice with its lines and party. */
-export function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const id = Number(params.id);
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const id = Number((await params).id);
   const invoice = db
     .prepare(
       `SELECT i.*, p.name AS party_name, p.gstin AS party_gstin,

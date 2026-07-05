@@ -49,14 +49,19 @@ const STATUS_BADGE: Record<Invoice["status"], string> = {
   UNPAID: "badge-muted",
 };
 
-export default function SalesViewPage({ params }: { params: { id: string } }) {
+export default async function SalesViewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const invoice = db
     .prepare(
       `SELECT i.*, p.name AS party_name, p.gstin AS party_gstin, p.state_code AS party_state_code
        FROM invoices i JOIN parties p ON p.id = i.party_id
        WHERE i.id = ? AND i.type = 'SALES'`
     )
-    .get(Number(params.id)) as Invoice | undefined;
+    .get(Number(id)) as Invoice | undefined;
   if (!invoice) notFound();
 
   const lines = db

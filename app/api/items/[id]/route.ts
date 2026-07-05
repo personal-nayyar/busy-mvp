@@ -5,11 +5,12 @@ import { toPaise } from "@/lib/money";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Ctx = { params: { id: string } };
+type Ctx = { params: Promise<{ id: string }> };
 
 /** GET /api/items/[id] — fetch a single item. */
-export function GET(_req: Request, { params }: Ctx) {
-  const row = db.prepare("SELECT * FROM items WHERE id = ?").get(params.id);
+export async function GET(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const row = db.prepare("SELECT * FROM items WHERE id = ?").get(id);
   if (!row) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
@@ -22,7 +23,8 @@ export function GET(_req: Request, { params }: Ctx) {
  * come from invoices).
  */
 export async function PUT(req: Request, { params }: Ctx) {
-  const existing = db.prepare("SELECT id FROM items WHERE id = ?").get(params.id);
+  const { id } = await params;
+  const existing = db.prepare("SELECT id FROM items WHERE id = ?").get(id);
   if (!existing) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
@@ -59,18 +61,19 @@ export async function PUT(req: Request, { params }: Ctx) {
     salePricePaise,
     purchasePricePaise,
     lowStockThreshold,
-    params.id
+    id
   );
 
-  return NextResponse.json({ id: Number(params.id) });
+  return NextResponse.json({ id: Number(id) });
 }
 
 /**
  * DELETE /api/items/[id] — only when the item is not referenced by any invoice
  * line. Otherwise reject with 400.
  */
-export function DELETE(_req: Request, { params }: Ctx) {
-  const existing = db.prepare("SELECT id FROM items WHERE id = ?").get(params.id);
+export async function DELETE(_req: Request, { params }: Ctx) {
+  const { id } = await params;
+  const existing = db.prepare("SELECT id FROM items WHERE id = ?").get(id);
   if (!existing) {
     return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
@@ -78,7 +81,7 @@ export function DELETE(_req: Request, { params }: Ctx) {
   const usedInLines = (
     db
       .prepare("SELECT COUNT(*) c FROM invoice_lines WHERE item_id = ?")
-      .get(params.id) as { c: number }
+      .get(id) as { c: number }
   ).c;
 
   if (usedInLines > 0) {
@@ -88,6 +91,6 @@ export function DELETE(_req: Request, { params }: Ctx) {
     );
   }
 
-  db.prepare("DELETE FROM items WHERE id = ?").run(params.id);
+  db.prepare("DELETE FROM items WHERE id = ?").run(id);
   return NextResponse.json({ ok: true });
 }

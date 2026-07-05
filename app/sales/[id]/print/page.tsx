@@ -42,7 +42,12 @@ interface Line {
   line_total_paise: number;
 }
 
-export default function SalesPrintPage({ params }: { params: { id: string } }) {
+export default async function SalesPrintPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const company = getCompany();
   const invoice = db
     .prepare(
@@ -51,7 +56,7 @@ export default function SalesPrintPage({ params }: { params: { id: string } }) {
        FROM invoices i JOIN parties p ON p.id = i.party_id
        WHERE i.id = ? AND i.type = 'SALES'`
     )
-    .get(Number(params.id)) as Invoice | undefined;
+    .get(Number(id)) as Invoice | undefined;
   if (!invoice) notFound();
 
   const lines = db

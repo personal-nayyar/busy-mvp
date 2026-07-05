@@ -31,21 +31,23 @@ function drCr(paise: number): string {
   return paise > 0 ? `${formatINR(paise)} Dr` : `${formatINR(-paise)} Cr`;
 }
 
-export default function PartyLedgerPage({
+export default async function PartyLedgerPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { from?: string; to?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const partyId = Number(params.id);
+  const { id } = await params;
+  const sp = await searchParams;
+  const partyId = Number(id);
   const party = db
     .prepare("SELECT id, name, gstin, state_code FROM parties WHERE id = ?")
     .get(partyId) as PartyRow | undefined;
   if (!party) notFound();
 
-  const from = (searchParams.from ?? "").trim();
-  const to = (searchParams.to ?? "").trim();
+  const from = (sp.from ?? "").trim();
+  const to = (sp.to ?? "").trim();
 
   const conditions = ["le.party_id = ?"];
   const args: (number | string)[] = [partyId];
