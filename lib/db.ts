@@ -222,11 +222,31 @@ function createDb(): Database.Database {
   return db;
 }
 
-const globalForDb = globalThis as unknown as { __busyDb?: Database.Database };
+const globalForDb = globalThis as unknown as {
+  __busyDb?: Database.Database;
+  __busyDemoSeeded?: boolean;
+};
 const db: Database.Database = globalForDb.__busyDb ?? createDb();
 if (!globalForDb.__busyDb) globalForDb.__busyDb = db;
 
 export default db;
+
+/**
+ * Optional demo data for showcase deployments (set SEED_DEMO=1, e.g. on Vercel).
+ * Invoked here — after `db` is initialized — because the posting helpers used by the
+ * seeder dereference this default export. `seedDemo` is a no-op unless the DB is empty,
+ * so it safely re-populates the ephemeral /tmp database on each Vercel cold start.
+ * Imported lazily to keep this module free of the invoices/ledger import cycle at load.
+ */
+if (process.env.SEED_DEMO && !globalForDb.__busyDemoSeeded) {
+  globalForDb.__busyDemoSeeded = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    (require("./seed-demo") as typeof import("./seed-demo")).seedDemo();
+  } catch (err) {
+    console.error("Demo seed failed:", err);
+  }
+}
 
 /** Read the single company row. */
 export function getCompany(): Company {

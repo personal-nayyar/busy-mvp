@@ -25,6 +25,29 @@ On first load the app seeds the default chart of accounts and a placeholder comp
 Go to **Company Settings** first and set your company name + **state** (this is the
 supplier state that decides CGST/SGST vs IGST).
 
+## Deploy on Vercel
+
+Data lives in a local SQLite file (`better-sqlite3`). Vercel's filesystem is read-only
+except `/tmp`, so on Vercel the DB is created under `/tmp` automatically (`lib/db.ts`
+falls back to `/tmp/busy.db` when the `VERCEL` env var is present).
+
+> **`/tmp` is ephemeral and per-instance.** The database is recreated on every cold start
+> and is not shared across concurrent instances, so it is only suitable for a **demo**, not
+> durable data. For real persistence, move to a hosted DB (Postgres / Turso).
+
+**Populate demo data on deploy:** set the environment variable `SEED_DEMO=1` in your Vercel
+project (Settings → Environment Variables). On each cold start the app seeds a sample
+company, parties, items, and a few sales/purchase invoices so the dashboard and reports are
+populated. The seed is a no-op if the database already has parties, and it never runs unless
+`SEED_DEMO` is set — local `npm run dev` stays clean. See `lib/seed-demo.ts`.
+
+To preview the deployed behaviour locally:
+
+```bash
+npm run build
+SEED_DEMO=1 VERCEL=1 npm run start   # writes /tmp/busy.db, seeded
+```
+
 ## What you can do (demo walkthrough)
 
 1. **Company Settings** — set name, GSTIN (validated), and home state.
